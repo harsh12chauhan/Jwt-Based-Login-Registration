@@ -1,0 +1,46 @@
+JWT Implementation Guide By Harsh Chauhan
+-----------------------------------------
+Dependencies : spring-web, spring-security, spring-devtools, validation, spring-data-jpa
+JWT-Dependencies : jjwt-api, jjwt-impl, jjwt-jackson
+
+1. create a config class {SecurityConfig} and annotate it with [@Configuration,@EnableWebSecurity]
+	1.1 @AutoWired -> {JwtAuthFilter,UserDetailsService}
+	1.2 create 3 Beans(PasswordEncoder, AuthenticationManager, SecurityFilterChain) and annotate it with [@Bean].
+
+2. create {CustomUserDetailsService} class which implements UserDetailsService.
+	2.1 @Autowired -> {UserRepository}
+	2.1 @override loadUserByUsername(String username) method.
+	2.2 fetch user by username from db.
+	2.3 set values of {username,passwrod,role} from user in new [UserDetails.User] object and return object.
+
+3. create {jwtUtil} class which have [generateToken(),extractUsernameFromToken(),validateToken()] methods and annotate it with [@Component].
+
+4. create {JwtAuthFilter} class which extends [OncePreRequestFilter].
+	4.1 @override {doFilterInternal} method and @Autowired [JwtUtil,UserDetailsService].
+	4.2 take the header from request.
+		4.2.1 if it is null and not staring with "Bearer ".
+		4.2.2 chain.doFilter(request,response) for continuing and return;
+	4.3 take token out of header extracting  "Bearer " from token.
+	4.4 get the username from the token using {JwtUtil.extractUsernameFromToken} method.
+	4.5 if username is not null and (SecurityContextHolder.getContext.getAuthentication()) is not null then 
+		4.5.1 create [UserDetails] object and load it using {loadUserByUsername} method.
+		4.5.2 check if(token is valid by {jwtUtil.validateToken()})
+			4.5.2.1  do this ->
+				 var authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+               			 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+               			 SecurityContextHolder.getContext().setAuthentication(authToken);
+
+	4.6 for anything else do same as step 4.2.2.
+
+5. create controller and annotate it with [@Restcontroller,@RequestMapping] and @Autowired [UserRepository,PasswordEncoder,JwtUtil].
+	5.1 for register -> find if user is present in db ,if not present then return with bad_request.
+		5.1.1 else -> hash the password,set the role and save the user in db and return ok_request.
+        		user.setPassword(passwordEncoder.encode(user.getPassword()));
+		        user.setRoles(Collections.singleton(Role.USER)); // Default role USER
+		        userRepository.save(user);
+		        return ResponseEntity.ok("User registered successfully!");
+	5.2 for login -> find user by username or email
+		5.2.1 check if the current userPassword hash matches with the password hash save in db.
+		5.2.2 if -> not matched then return bad_request
+		5.2.3 else -> generate token using JwtUtil.generateToken(username) and return token with ok_request.
+

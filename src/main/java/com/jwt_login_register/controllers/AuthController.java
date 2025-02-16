@@ -36,7 +36,7 @@ public class AuthController {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRoles(Collections.singleton(Role.ADMIN)); // Default role USER
+        user.setRoles(Collections.singleton(Role.USER)); // Default role USER
         userRepository.save(user);
         return ResponseEntity.ok("User registered successfully!");
     }
