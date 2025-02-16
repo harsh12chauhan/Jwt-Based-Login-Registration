@@ -44,3 +44,12 @@ JWT-Dependencies : jjwt-api, jjwt-impl, jjwt-jackson
 		5.2.2 if -> not matched then return bad_request
 		5.2.3 else -> generate token using JwtUtil.generateToken(username) and return token with ok_request.
 
+6. add in application properties ->
+	# Database Configuration
+	spring.datasource.url=jdbc:mysql://localhost:3306/loginsystem
+	spring.datasource.username=root
+	spring.datasource.password=root
+	spring.jpa.hibernate.ddl-auto=update
+
+	# JWT Secret Key
+	app.jwt.secret=YourSecretKeyForJWTGeneration {will be 16 characters long key}
